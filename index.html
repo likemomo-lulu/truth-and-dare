@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>真心话大冒险</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <style>
+        /* 现有的所有样式代码保持不变 */
+    </style>
+</head>
+<body>
+    <style>
+        /* ... 其他样式保持不变 ... */
+    
+        .container {
+            text-align: center;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    
+        .question-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            min-height: 225px;
+            width: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            transition: transform 0.3s ease;
+        }
+    
+        .settings {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+    
+        .timer-input {
+            width: 60px;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    
+        .timer {
+            color: #333;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+    
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+    
+        button {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+    
+        .truth {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+    
+        .dare {
+            background: linear-gradient(45deg, #f44336, #e53935);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+    
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+    
+        button:active {
+            transform: translateY(1px);
+        }
+    
+        .history-link {
+            color: #666;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+    
+        .history-link:hover {
+            background: rgba(0,0,0,0.1);
+        }
+    
+        .history-panel {
+            position: fixed;
+            right: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            padding: 2rem;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            visibility: hidden;
+        }
+    
+        .history-panel.active {
+            right: 0;
+            visibility: visible;
+        }
+    
+        .history-panel h3 {
+            margin-top: 0;
+            padding-right: 20px;
+        }
+    
+        .close-history {
+            position: absolute;
+            top: 0.8rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #666;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+    
+        .close-history:hover {
+            background: rgba(0,0,0,0.05);
+            color: #333;
+        }
+    
+        .history-item {
+            padding: 0.8rem;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+    
+        .history-item:last-child {
+            border-bottom: none;
+        }
+    
+        @keyframes questionIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+    
+    <div class="container">
+        <div class="settings">
+            <label>
+                <input type="checkbox" id="timerEnabled"> 启用倒计时
+            </label>
+            <input type="number" id="timerDuration" class="timer-input" value="30" min="1"> 秒
+            <span class="timer" id="timer" style="display: none;">00:00</span>
+        </div>
+        <div class="question-box" id="question">
+            点击下方按钮开始游戏
+        </div>
+        <div class="buttons">
+            <button class="truth" onclick="getQuestion('truth')">真心话</button>
+            <button class="dare" onclick="getQuestion('dare')">大冒险</button>
+        </div>
+        <a href="#" class="history-link" onclick="toggleHistory(event)">查看历史记录</a>
+    </div>
+    
+    <div class="history-panel" id="historyPanel">
+        <button class="close-history" onclick="toggleHistory(event)">×</button>
+        <h3>历史记录</h3>
+        <div id="history"></div>
+    </div>
+    
+    <script>
+        const clickSound = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAUAAAiSAAYGBgYJCQkJCQwMDAwMDw8PDw8SUlJSUlVVVVVVWFhYWFhbW1tbW15eXl5eYaGhoaGkpKSkpKenp6enqqqqqqqtra2trbDw8PDw8/Pz8/P29vb29vn5+fn5/Pz8/Pz//////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAIkjC5zKWAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV');
+        
+        function playClick() {
+            clickSound.currentTime = 0;
+            clickSound.play().catch(() => {});
+        }
+
+        const truthQuestions = [
+            "你最后一次说谎是什么时候？",
+            "你最难忘的一次旅行是哪次？",
+            "你最喜欢的一首歌是什么？",
+            "你最想感谢的人是谁？为什么？",
+            "你最后悔的一件事是什么？",
+            "你最大的梦想是什么？",
+            "你第一次恋爱是什么时候？",
+            "你最害怕什么？",
+            "如果可以重来，你最想改变什么？",
+            "你认为自己最大的优点是什么？",
+            "你的初恋是怎么开始的？",
+            "你做过最疯狂的事情是什么？",
+            "你最想实现的三个愿望是什么？",
+            "你最喜欢的一部电影是什么？",
+            "你最尴尬的经历是什么？",
+            "你最欣赏的一个人是谁？为什么？",
+            "你最想去的地方是哪里？",
+            "你最近一次哭是因为什么？",
+            "你最引以为豪的事情是什么？",
+            "你最不喜欢别人对你说什么话？",
+            "你最想改变自己的哪一点？",
+            "你最难忘的一个生日是怎样的？",
+            "你收到过最有意义的礼物是什么？",
+            "你最喜欢的一门课程是什么？",
+            "你最想感谢的一位老师是谁？",
+            "你最珍惜的友情是和谁？",
+            "你做过最让自己感动的事情是什么？",
+            "你最想对父母说的一句话是什么？",
+            "你最喜欢的一本书是什么？",
+            "你最想重温的一段时光是什么时候？",
+            "你最近一次开心到大笑是因为什么？",
+            "你最想实现的职业目标是什么？",
+            "你最喜欢的季节是什么？为什么？",
+            "你最难忘的一次失败经历是什么？",
+            "你最想改变的一个习惯是什么？",
+            "你最喜欢的一种食物是什么？",
+            "你最想学习的一项技能是什么？",
+            "你最难忘的一次帮助他人的经历是什么？",
+            "你最想念的一个人是谁？",
+            "你最后一次感到特别幸福是什么时候？",
+            "你最想完成的一个小目标是什么？",
+            "你最喜欢自己身上的哪一点？",
+            "你最想重新开始的一段经历是什么？",
+            "你最近一次感动是因为什么？",
+            "你最想对自己说的一句话是什么？",
+            "你最喜欢的一种运动是什么？",
+            "你最想尝试的一件新鲜事是什么？",
+            "你最难忘的一次惊喜是什么？",
+            "你最想突破的一个心理障碍是什么？",
+            "你最想拥有的一项超能力是什么？"
+        ];
+    
+        const dareQuestions = [
+            "模仿一种动物叫声",
+            "唱一首歌的副歌部分",
+            "做一个鬼脸",
+            "学猫叫三声",
+            "即兴跳舞30秒",
+            "模仿在场一个人的说话方式",
+            "用夸张的表情讲述今天发生的一件事",
+            "打电话给一个好朋友说想他/她了",
+            "做三个俯卧撑",
+            "闭着眼睛画一只猫",
+            "用rap方式介绍自己",
+            "模仿一个电视广告",
+            "表演一个默剧小品",
+            "用方言说一句话",
+            "做一个瑜伽动作",
+            "模仿一个卡通人物的声音",
+            "即兴编一个四句小诗",
+            "表演一个魔术技巧",
+            "用肢体语言表演一个成语",
+            "做一个托马斯全旋",
+            "模仿一种职业的工作状态",
+            "用夸张的表情拍一张自拍",
+            "表演一段机器人舞蹈",
+            "用反方向说出自己的名字",
+            "模仿一种交通工具的声音",
+            "表演一个话剧片段",
+            "做一个倒立（扶墙）",
+            "用手语表达'我爱你'",
+            "模仿一种方言唱歌",
+            "表演一个小品片段",
+            "做一个单腿站立30秒",
+            "用夸张的表情演绎一个情绪",
+            "模仿一个名人的说话方式",
+            "表演一段街舞动作",
+            "用口哨吹一首歌",
+            "模仿一种乐器的声音",
+            "表演一个杂技动作",
+            "做一个俯卧撑",
+            "用肢体语言表达一种职业",
+            "模仿一种运动员的动作",
+            "表演一个武术动作",
+            "做一个平板支撑30秒",
+            "用夸张的方式走秀",
+            "模仿一种动画角色",
+            "表演一段即兴舞蹈",
+            "用手势表演猜词游戏",
+            "模仿一种情景剧片段",
+            "表演一个魔术",
+            "做一个高难度拉伸动作",
+            "用无声表演表达一个故事"
+        ];
+    
+        let timerInterval;
+        const history = [];
+    
+        function getQuestion(type) {
+            playClick();
+            const questions = type === 'truth' ? truthQuestions : dareQuestions;
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            const question = questions[randomIndex];
+            
+            const questionBox = document.getElementById('question');
+            questionBox.style.animation = 'none';
+            questionBox.offsetHeight; // 触发重排
+            questionBox.style.animation = 'questionIn 0.5s ease';
+            questionBox.textContent = question;
+            
+            addToHistory(`${question} (${type === 'truth' ? '真心话' : '大冒险'})`);
+            
+            if (document.getElementById('timerEnabled').checked) {
+                startTimer();
+            }
+        }
+    
+        function startTimer() {
+            clearInterval(timerInterval);
+            const duration = parseInt(document.getElementById('timerDuration').value) || 30; // 添加默认值
+            let seconds = duration;
+            document.getElementById('timer').style.display = 'block';
+            updateTimerDisplay(seconds);
+            
+            timerInterval = setInterval(() => {
+                seconds--;
+                updateTimerDisplay(seconds);
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer').textContent = '时间到！';
+                    setTimeout(() => {
+                        document.getElementById('timer').style.display = 'none';
+                    }, 2000);
+                }
+            }, 1000);
+        }
+    
+        // 添加输入框变化监听
+        document.getElementById('timerDuration').addEventListener('change', function() {
+            if (document.getElementById('timerEnabled').checked) {
+                clearInterval(timerInterval);
+                startTimer();
+            }
+        });
+    
+        function updateTimerDisplay(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+    
+        function addToHistory(text) {
+            history.unshift(text);
+            if (history.length > 10) history.pop();
+            
+            const historyHtml = history
+                .map(item => `<div class="history-item">${item}</div>`)
+                .join('');
+            document.getElementById('history').innerHTML = historyHtml;
+        }
+    
+        function toggleHistory(event) {
+            event.preventDefault();
+            const panel = document.getElementById('historyPanel');
+            panel.classList.toggle('active');
+            // 添加以下代码
+            if (panel.classList.contains('active')) {
+                panel.style.visibility = 'visible';
+            } else {
+                setTimeout(() => {
+                    panel.style.visibility = 'hidden';
+                }, 300); // 与 CSS transition 时间相匹配
+            }
+        }
+    
+        // 初始化倒计时显示
+        document.getElementById('timerEnabled').addEventListener('change', function() {
+            document.getElementById('timer').style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                clearInterval(timerInterval);
+            }
+        });
+    </script>
